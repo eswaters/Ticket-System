@@ -1,0 +1,795 @@
+package javaFX;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextBuilder;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+/*
+ * Eric Waters - CSE 205 Honors Contract
+ * This is a ticket purchasing system for ASU
+ * It checks for the validity of card information, i.e. an invalid credit card number will throw an error message to the user.
+ * It then prompts the user to select a file destination for their tickets, and the tickets are exported as a .txt file.
+ */
+
+@SuppressWarnings({ "deprecation", "unused" })
+public class ticket_project extends Application implements EventHandler<ActionEvent>{
+	
+	//Had to sort of sloppily declare things here so that I could access them in the EventHandler
+	Stage primaryStage;
+	Scene scene1;
+	Scene scene2;
+	Scene scene3;
+	GridPane gridHome = new GridPane();
+	GridPane gridDetails = new GridPane();
+	StackPane stackDone = new StackPane();
+	ToggleGroup radioGroup = new ToggleGroup();
+	Button proceed = new Button("Ready? Click here to continue.");
+	RadioButton[] rbArr;
+	Text welcome = new Text("\n\n\tWelcome to the ASU Ticket Center!\nPlease select the game you would like to attend.");
+	String selected = "";
+    Text t2 = new Text();
+	ComboBox<String> cb = new ComboBox<String>();
+	Button goBack = new Button("Return Home");
+	final CheckBox[] checkBox = new CheckBox[3];
+	VBox seatingInfo = new VBox();
+	HBox studentSection = new HBox();
+	HBox generalSeating = new HBox();
+	HBox boxSeats = new HBox();
+	TextField studentSectionField = new TextField();
+	int countStudentSection = 0;
+	TextField generalSeatingField = new TextField();
+	int countGeneralSeating = 0;
+	TextField boxSeatsField = new TextField();
+	int countBoxSeats = 0;
+	double price = 0.0;
+    Text total = new Text("Current Total Price: $" + price);
+    Button[] plusOnes = new Button[3];
+    Button[] minusOnes = new Button[3];
+	int numStudentSeats = 0;
+	Text studentSectionText = new Text("Number of Student Section seats: \t" + numStudentSeats);
+	int numGeneralSeats = 0;
+	Text generalSeatingText = new Text("Number of General Seating seats: \t" + numGeneralSeats);
+	int numBoxSeats = 0;
+	Text boxSeatsText = new Text("Number of box seats: \t\t\t" + numBoxSeats);
+	HBox bigBox = new HBox();
+	Button done = new Button("Confirm and Download Tickets");
+	Button[] finalButtons = new Button[2];
+	
+	//inputs for card info
+	String[] cardInfo = new String[8];
+	TextField nameField = new TextField();
+	TextField addressField = new TextField();
+	TextField cityField = new TextField();
+	TextField stateField = new TextField();
+	TextField zipField = new TextField();
+	TextField cardField = new TextField();
+	TextField cvvField = new TextField();
+	TextField expField = new TextField();
+	TextField[] fields = new TextField[] {nameField, addressField, cityField, stateField, zipField, cardField, cvvField, expField}; 
+	
+	Text t1 = new Text();
+
+	public static void main(String[] args) {
+        launch(args);
+    }
+	
+	@Override
+	public void start(Stage stage) throws Exception {
+		primaryStage = stage;
+		stage.setTitle("Ticket Machine - Eric Waters - CSE 205");
+		
+		//Creating scene 1 - Choosing Ticket
+		
+		//Creating an HBox for the top seatingInfo
+		HBox top = new HBox();
+		
+		//Creating 4 duplicate pitchfork images and putting into an array
+		ImageView[] images = new ImageView[4];
+		for(int i = 0; i < 4; i++)
+		{
+			Image image = new Image("https://i.pinimg.com/236x/da/75/c9/da75c9e3b36d756e1fd65cb4a97f7be4--sport-logos-asu.jpg");
+			ImageView imageView = new ImageView(image);
+			imageView.setX(0);
+			imageView.setY(0);
+			imageView.setFitHeight(500);
+			imageView.setFitWidth(100);
+			imageView.setPreserveRatio(true);
+			images[i] = imageView;
+		}
+
+		//Setting proceed button action
+		proceed.setOnAction(this);
+		
+		//Welcome/Available texts
+		Label available = new Label("Available events: ");
+		available.setFont(Font.font(25));
+		
+		welcome.setFont(Font.font("Arial", FontWeight.BOLD, 30));
+		
+		//Creating RB's and putting in a VBOX
+		VBox gameBox = new VBox();
+		gameBox.setMaxWidth(880);
+		RadioButton rb1 = new RadioButton("[Men's Football] ASU VS University of Arizona");
+    	RadioButton rb2 = new RadioButton("[Women's Volleyball] ASU VS University of Oregon");
+    	RadioButton rb3 = new RadioButton("[Men's Wrestling] ASU VS Stanford University");
+    	RadioButton rb4 = new RadioButton("[Women's Softball] ASU VS Northern Arizona University");
+    	rbArr = new RadioButton[] {rb1, rb2, rb3, rb4};
+    	for(int i = 0; i < rbArr.length; i++)
+    	{
+    		rbArr[i].setToggleGroup(radioGroup);
+    		rbArr[i].setOnAction(this);
+    		rbArr[i].setFont(Font.font(25));
+    	}
+    	
+    	//Some styling
+    	String cssLayout = "-fx-padding: 5;" + "-fx-border-style: solid inside;"
+    	        + "-fx-border-width: 2;" + "-fx-border-insets: 5;"
+    	        + "-fx-border-radius: 5;" + "-fx-border-color: maroon;";
+    	proceed.setStyle("-fx-border-width: 2;"
+    	        + "-fx-border-radius: 5;" + "-fx-border-color: maroon;" + "-fx-background-color: gold");
+    	proceed.setMinWidth(880);
+    	proceed.setFont(Font.font(25));
+    	
+    	//Adding seatingInfo to boxes
+    	top.getChildren().add(images[0]);
+    	top.getChildren().add(welcome);
+    	top.getChildren().add(images[1]);
+    	gameBox.setStyle(cssLayout); 
+    	gameBox.getChildren().add(available);
+    	gameBox.getChildren().addAll(rbArr);
+    	
+    	//Adding boxes to grid and setting scene
+    	gridHome.add(top, 0, 0);
+    	gridHome.add(gameBox, 0, 100);
+    	gridHome.add(proceed, 0, 200);
+        scene1 = new Scene(gridHome, 880, 470);
+        stage.setScene(scene1);
+        stage.show();
+        
+        //---------------------------------------------------------------------
+        //SCENE 2 - Entering Information
+        scene2 = new Scene(gridDetails, 880, 470);
+        
+        //Creating top text
+    	
+        t1.setText("\n\n\t\t\t\t    Almost there!\nWe just need a few more pieces of information from you.");
+        t1.setFont(Font.font("Arial", FontWeight.BOLD, 25.5));
+        
+        //Assigning action to goBack button
+        goBack.setOnAction(this);
+        goBack.setFont(Font.font("Arial", FontWeight.BOLD, 15));
+        goBack.setStyle("-fx-border-width: 2;"
+    	        + "-fx-border-radius: 5;" + "-fx-border-color: maroon;" + "-fx-background-color: gold");
+        goBack.setMinWidth(scene2.getWidth());
+     
+        //setting seatingInfo spacing
+        seatingInfo.setSpacing(10);
+        
+        //Each field is an HBox with a label and a field
+        //fullName to be used later
+        HBox fullName = new HBox();
+        Label fullName1 = new Label("Please enter your full name: ");
+        TextField fullName2 = new TextField();
+        fullName.getChildren().addAll(fullName1, fullName2);
+
+        //adding items to the comboBox
+        ArrayList<String> cbNames = new ArrayList<String>(); 
+        cbNames.add("Student Section");
+        cbNames.add("General Seating");
+        cbNames.add("Box Seats");
+        for (int i = 0; i < cbNames.size(); i++) {
+            final CheckBox cb = checkBox[i] = new CheckBox(cbNames.get(i));
+            checkBox[i].setOnAction(this);
+        }
+        //Putting checkBox seatingInfo into an HBox
+        HBox check = new HBox();
+        for(int i = 0; i < 3; i++)
+        {
+        	check.getChildren().add(checkBox[i]);
+        }
+        
+        //Putting checkBox in an VBox
+        Label typeSeat = new Label("Type of seat: ");
+        VBox typeSeatBox = new VBox(typeSeat, check);
+        
+        //Creating 3 +1 and -1 buttons
+        for(int i = 0; i < 3; i++)
+        {
+        	Button b1 = new Button("+1");
+        	b1.setOnAction(this);
+        	plusOnes[i] = b1;
+        	Button b2 = new Button("-1");
+        	b2.setOnAction(this);
+        	minusOnes[i] = b2;
+        }
+        HBox[] seating = new HBox[] {studentSection, generalSeating, boxSeats};
+        Text[] seatingText = new Text[] {studentSectionText, generalSeatingText, boxSeatsText};
+        for(int i = 0; i < seating.length; i++)
+        {
+        	seating[i].getChildren().addAll(seatingText[i], plusOnes[i], minusOnes[i]);
+        	seating[i].setSpacing(10);
+        }
+
+        //Creating HBox for top seatingInfo
+        HBox top2 = new HBox();
+        top2.getChildren().addAll(images[2], t1, images[3]);
+        
+        //Putting the upper elements in their own VBox
+        VBox topPart = new VBox();
+        topPart.getChildren().addAll(goBack, top2);
+        
+        //Putting HBoxes in the VBox
+        seatingInfo.getChildren().addAll(t2, typeSeatBox, total);
+        seatingInfo.setStyle(cssLayout);
+        seatingInfo.setMinWidth(440);
+        
+        //--------------------------Creating the right-side VBox for payment information-------------------------------------
+        VBox payment = new VBox();
+        payment.setStyle(cssLayout);
+        payment.setMinWidth(440);
+        payment.setSpacing(5);
+        
+        //Instructions Text
+        Text instructions = new Text("--Debit/Credit Card Information--\nPlease enter info as it appears on your card.");
+        payment.getChildren().add(instructions);
+        
+        //Name field
+        HBox name = new HBox();
+        Label nameLabel = new Label("Full Name: ");
+        
+        nameField.setMinWidth(250);
+        name.getChildren().addAll(nameLabel, nameField);
+        payment.getChildren().add(name);
+        
+        //Billing Address field
+        HBox address = new HBox();
+        Label addressLabel = new Label("Billing Address: ");
+        
+        addressField.setMinWidth(300);
+        address.getChildren().addAll(addressLabel, addressField);
+        payment.getChildren().add(address);
+        
+        //City, State, and Zip fields
+        HBox cityStateZip = new HBox();
+        cityStateZip.setSpacing(5);
+        Label cityLabel = new Label("City: ");
+        
+        cityField.setMaxWidth(90);
+        Label stateLabel = new Label("State: ");
+        
+        stateField.setMaxWidth(90);
+        Label zipLabel = new Label("Zip: ");
+        
+        zipField.setMaxWidth(90);
+        cityStateZip.getChildren().addAll(cityLabel, cityField, stateLabel, stateField, zipLabel, zipField);
+        payment.getChildren().add(cityStateZip);
+        
+        //Card Number Field
+        HBox card = new HBox();
+        card.setSpacing(5);
+        Label cardLabel = new Label("16-digit card number:");
+        
+        cardField.setMinWidth(200);
+        card.getChildren().addAll(cardLabel, cardField);
+        payment.getChildren().add(card);
+        
+        //CVV number and expiration date
+        HBox cvvExpiration = new HBox();
+        cvvExpiration.setSpacing(5);
+        HBox cvv = new HBox();
+        Label cvvLabel = new Label("3-digit CVV: ");
+        
+        cvvField.setMaxWidth(50);
+        cvv.getChildren().addAll(cvvLabel, cvvField);
+        
+        HBox expiration = new HBox();
+        Label expLabel = new Label("Expiration date (XX-XX): ");
+        
+        expField.setMaxWidth(100);
+        expiration.getChildren().addAll(expLabel, expField);
+        
+        cvvExpiration.getChildren().addAll(cvv, expiration);
+        payment.getChildren().add(cvvExpiration);
+        
+        //Done Button
+        done.setMinWidth(400);
+        done.setStyle("-fx-border-width: 2;"
+    	        + "-fx-border-radius: 5;" + "-fx-border-color: maroon;" + "-fx-background-color: gold");
+        done.setOnAction(this);
+        payment.getChildren().add(done);
+        
+        //Adding left and right VBoxes to bigBox
+        //bigBox.getChildren().addAll(seatingInfo, payment);
+        bigBox.getChildren().add(seatingInfo);
+        bigBox.getChildren().add(payment);
+  
+        //Adding seatingInfo to the grid
+        gridDetails.add(topPart, 0, 0);
+        gridDetails.add(bigBox, 0, 200);
+        
+        //-------------Creating Scene 3------------------------------------------------------------
+        scene3 = new Scene(stackDone, 880, 470);
+        VBox finalItems = new VBox();
+        
+        //Creating final ASU ATHLETICS image
+        Image finalImage = new Image("https://thesundevils.com/images/2013/6/7/MTSFJHNEKDWIKBC.20130607165550.jpg");
+        ImageView imageView = new ImageView(finalImage);
+		imageView.setX(500);
+		imageView.setY(900);
+		imageView.setFitHeight(scene3.getHeight());
+		imageView.setFitWidth(scene3.getWidth());
+		imageView.setPreserveRatio(true);
+		finalItems.getChildren().add(imageView);
+		
+		//Adding a thank you text
+		Text thankYou = new Text("\t\t\t    Thank you, Enjoy the game!\n\t\t\t\t\tGO DEVILS!");
+		thankYou.setFont(Font.font("Arial", FontWeight.BOLD, 30));
+		thankYou.setFill(Color.MAROON);
+		finalItems.getChildren().add(thankYou);
+		
+		
+		//Adding final buttons, new game and exit
+		HBox lastButtons = new HBox();
+		Button newGame = new Button("Buy tickets for another game");
+		newGame.setFont(Font.font("Arial", 20));
+		Button exit = new Button("Exit");
+		exit.setFont(Font.font("Arial", 20));
+		finalButtons[0] = newGame;
+		finalButtons[1] = exit;
+		for(int i = 0; i < 2; i++)
+		{
+			finalButtons[i].setOnAction(this);
+			finalButtons[i].setStyle("-fx-border-width: 2;"
+	    	        + "-fx-border-radius: 5;" + "-fx-border-color: maroon;" + "-fx-background-color: gold");
+			finalButtons[i].setMinHeight(50);
+			finalButtons[i].setMinWidth(440);
+			lastButtons.getChildren().add(finalButtons[i]);
+		}
+		finalItems.getChildren().add(lastButtons);
+		
+		//Aligning VBox in center using stackPane
+		stackDone.setAlignment(finalItems, Pos.BOTTOM_CENTER);
+		stackDone.getChildren().add(finalItems);
+		
+        
+	}
+	
+	@Override
+	public void handle(ActionEvent event) {
+		
+		//RadioButtons on Home page
+		if(event.getSource() == rbArr[0])
+		{
+			selected = "[Men's Football] ASU VS University of Arizona";
+		}
+		if(event.getSource() == rbArr[1])
+		{
+			selected = "[Women's Volleyball] ASU VS University of Oregon";
+		}
+		if(event.getSource() == rbArr[2])
+		{
+			selected = "[Men's Wrestling] ASU VS Stanford University";
+		}
+		if(event.getSource() == rbArr[3])
+		{
+			selected = "[Women's Softball] ASU VS Northern Arizona University";
+		}
+		
+		//Proceed to next page
+		if(event.getSource() == proceed)
+		{
+			int count = 0;
+			for(int i = 0; i < rbArr.length; i++)
+			{
+				if(rbArr[i].isSelected())
+				count++;
+			}
+			if(count == 1)
+			{
+				t2.setText("Game selected: " + selected + "\n\t\t\t  (You may change this by clicking \"Return Home\")");
+				primaryStage.setScene(scene2);
+			}
+			else
+			{
+				welcome.setText("\n\n\tWelcome to the ASU Ticket Center!\nPlease select the game you would like to attend.\n   *You must select a game before continuting*");
+			}
+		}
+		
+		//Go back to Home page
+		if(event.getSource() == goBack)
+		{
+			welcome.setText("\n\n\tWelcome to the ASU Ticket Center!\nPlease select the game you would like to attend.\n");
+			primaryStage.setScene(scene1);
+		}
+		
+		//Action Handling for Checkboxes
+		if(checkBox[0].isSelected() && countStudentSection == 0)
+		{
+			
+			seatingInfo.getChildren().add(studentSection);
+			countStudentSection++;
+		}
+		else if(countStudentSection > 0 && !checkBox[0].isSelected())
+		{
+			seatingInfo.getChildren().remove(studentSection);
+			countStudentSection--;
+			numStudentSeats = 0;
+			studentSectionText.setText("Number of Student Section seats: \t" + numStudentSeats);
+			updatePrice();
+		}
+		if(checkBox[1].isSelected() && countGeneralSeating == 0)
+		{
+			seatingInfo.getChildren().add(generalSeating);
+			countGeneralSeating++;
+		}
+		else if(countGeneralSeating > 0 && !checkBox[1].isSelected())
+		{
+			seatingInfo.getChildren().remove(generalSeating);
+			countGeneralSeating--;
+			numGeneralSeats = 0;
+			generalSeatingText.setText("Number of General Seating seats: \t" + numGeneralSeats);
+			updatePrice();
+		}
+		if(checkBox[2].isSelected() && countBoxSeats == 0)
+		{
+			seatingInfo.getChildren().add(boxSeats);
+			countBoxSeats++;
+		}
+		else if(countBoxSeats > 0 && !checkBox[2].isSelected())
+		{
+			seatingInfo.getChildren().remove(boxSeats);
+			countBoxSeats--;
+			numBoxSeats = 0;
+			boxSeatsText.setText("Number of box seats: \t\t\t" + numBoxSeats);
+			updatePrice();
+		}
+		
+		//Handling +1/-1 Button Events
+		if(event.getSource() == plusOnes[0])
+		{
+			numStudentSeats++;
+			studentSectionText.setText("Number of Student Section seats: \t" + numStudentSeats);
+			updatePrice();
+		}
+		if(event.getSource() == minusOnes[0] && numStudentSeats > 0)
+		{
+			numStudentSeats--;
+			studentSectionText.setText("Number of Student Section seats: \t" + numStudentSeats);
+			updatePrice();
+		}
+		if(event.getSource() == plusOnes[1])
+		{
+			numGeneralSeats++;
+			generalSeatingText.setText("Number of General Seating seats: \t" + numGeneralSeats);
+			updatePrice();
+		}
+		if(event.getSource() == minusOnes[1] && numGeneralSeats > 0)
+		{
+			numGeneralSeats--;
+			generalSeatingText.setText("Number of General Seating seats: \t" + numGeneralSeats);
+			updatePrice();
+		}
+		if(event.getSource() == plusOnes[2])
+		{
+			numBoxSeats++;
+			boxSeatsText.setText("Number of box seats: \t\t\t" + numBoxSeats);
+			updatePrice();
+		}
+		if(event.getSource() == minusOnes[2] && numBoxSeats > 0)
+		{
+			numBoxSeats--;
+			boxSeatsText.setText("Number of box seats: \t\t\t" + numBoxSeats);
+			updatePrice();
+		}
+
+		//Confirm and Submit Button
+		if(event.getSource() == done)
+		{
+			int count = 0;
+			int count2 = 0;
+			int count3 = 0;
+			int count4 = 0;
+			if(numStudentSeats == 0 && numGeneralSeats == 0 && numBoxSeats == 0)
+			{
+				count++;
+			}
+			//checking if card info has been filled out
+			for(int i = 0; i < cardInfo.length; i++)
+			{
+				if(fields[i].getText().equals(""))
+				{
+					count3++;
+				}
+				//seeing if card info inputs are numbers
+				if(i == 4 || i == 5 || i == 6)
+				{
+					try {
+						Long.parseLong(fields[i].getText());
+					}
+					catch(NumberFormatException e){
+						count2++;
+					}
+				}
+				//seeing if zip is 5 digits
+				if(fields[4].getText().length() != 5)
+				{
+					count2++;
+				}
+				//seeing if CVV is 3 digits
+				if(fields[6].getText().length() != 3)
+				{
+					count2++;
+				}
+				
+				//seeing if date is valid
+				cardInfo[i] = fields[i].getText();
+			}
+			//seeing if date is valid
+			String date = fields[fields.length-1].getText();
+			String dateFormat = "MM-yy";
+			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
+			sdf.setLenient(false);
+			try {
+				Date date2 = sdf.parse(date);
+			}catch(ParseException e)
+			{
+				count2++;
+			}
+			if(!isDateValid(date))
+			{
+				count2++;
+			}
+			
+			//Making sure card is valid
+			if(count2 > 0 || !isCardValid(Long.parseLong(cardField.getText())))
+			{
+				count4++;
+			}
+			
+			if(count > 0 || count2 > 0 || count3 > 0 || count4 > 0)
+			{
+				//error messages
+				if(count > 0 || count3 > 0)
+				{
+					t1.setText("\n\n\t\t\t\t    Almost there!\nWe just need a few more pieces of information from you.\n\n\t\t*Please fill out all fields and try again.*");
+				}
+				else if(count2 > 0)
+				{
+					t1.setText("\n\n\t\t\t\t    Almost there!\nWe just need a few more pieces of information from you.\n\n\t  *Double check your Zip Code and Card Info.*");
+				}
+				else if(count4 > 0 && !isCardValid(Long.parseLong(cardField.getText())))
+				{
+					t1.setText("\n\n\t\t\t\t    Almost there!\nWe just need a few more pieces of information from you.\n\n\t\t   *Please enter a valid card number*");
+				}
+			}
+			else
+			{
+				//Create tickets
+				makeTickets();
+				//Export ticket
+				exportTicket();
+				//Set new scene
+				primaryStage.setScene(scene3);
+			}
+		}
+		
+		//Final Buttons
+		if(event.getSource() == finalButtons[0])
+		{
+			t1.setText("\n\n\t\t\t\t    Almost there!\nWe just need a few more pieces of information from you.\n\t  Your card information was temporarily saved.");
+			for(int i = 0; i < checkBox.length; i++)
+			{
+				checkBox[i].setSelected(false);
+			}
+			for(int i = 0; i < rbArr.length; i++)
+			{
+				rbArr[i].setSelected(false);
+			}
+			primaryStage.setScene(scene1);
+		}
+		if(event.getSource() == finalButtons[1])
+		{
+			System.exit(0);
+		}
+	}
+	private boolean isDateValid(String date)
+	{
+		if(date.length() != 5)
+		{
+			return false;
+		}
+		if(date.charAt(2) != '-')
+		{
+			return false;
+		}
+		int monthInt;
+		int yearInt;
+		String month = date.substring(0,2);
+		int currentMonth = Calendar.getInstance().get(Calendar.MONTH);
+		try {
+			monthInt = Integer.parseInt(month);
+		}catch(Exception e)
+		{
+			return false;
+		}
+		
+		String year = "20" + date.substring(3);
+		int currentYear = Calendar.getInstance().get(Calendar.YEAR);
+		try {
+			yearInt = Integer.parseInt(year);
+		}catch(Exception e)
+		{
+			return false;
+		}
+		if(yearInt == currentYear)
+		{
+			if(monthInt < (currentMonth+1))
+			{
+				return false;
+			}
+		}
+		else if(yearInt < currentYear)
+		{
+			return false;
+		}
+		return true;
+	}
+	
+	//Update total price depending on +1/-1 buttons
+	private void updatePrice()
+	{
+		price = (numStudentSeats * 5.00) + (numGeneralSeats * 30.00) + (numBoxSeats * 50.00);
+		BigDecimal bd = new BigDecimal(price).setScale(2);
+		total.setText("Current Total Price: $" + bd.toString());
+	}
+
+	//The following is an implementation of the Luhn Algorithm to determine whether or not a card number is valid.
+	private boolean isCardValid(long n)
+	{
+		return (getSize(n) >= 13 &&  getSize(n) <= 16) &&  (prefixMatched(n, 4) ||  prefixMatched(n, 5) ||  prefixMatched(n, 37) ||  prefixMatched(n, 6)) &&  ((totalDoublePlaceEven(n) +  sumOddPlace(n)) % 10 == 0); 
+	}
+	public static int totalDoublePlaceEven(long n) 
+    { 
+        int total = 0; 
+        String number = n + ""; 
+        for (int i = getSize(n) - 2; i >= 0; i -= 2)  
+            total += getDigit(Integer.parseInt(number.charAt(i) + "") * 2); 
+          
+        return total; 
+    }
+    public static int getDigit(int n) 
+    { 
+        if (n < 9) 
+            return n; 
+        return n / 10 + n % 10; 
+    } 
+    public static int sumOddPlace(long n) 
+    { 
+        int total = 0; 
+        String number = n + ""; 
+        for (int i = getSize(n) - 1; i >= 0; i -= 2)  
+            total += Integer.parseInt(number.charAt(i) + "");         
+        return total; 
+    } 
+    public static boolean prefixMatched(long n, int d) 
+    { 
+        return getPrefix(n, getSize(d)) == d; 
+    } 
+    public static int getSize(long d) 
+    { 
+        String number = d + ""; 
+        return number.length(); 
+    } 
+    public static long getPrefix(long n, int k) 
+    { 
+        if (getSize(n) > k) { 
+            String number = n + ""; 
+            return Long.parseLong(number.substring(0, k)); 
+        } 
+        return n; 
+    }
+    //End of Luhn Algorithm
+
+    //text file export
+    public void exportTicket()
+    {
+    	String ticketString = makeTickets();
+		Text ticket = TextBuilder.create().text(ticketString).build();
+		FileChooser fileChooser = new FileChooser();
+		fileChooser.setInitialFileName("Tickets for " + selected + " game");
+		FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("TXT files (*.txt)", "*.txt");
+		fileChooser.getExtensionFilters().add(extFilter);
+		File file = fileChooser.showSaveDialog(primaryStage);
+		if(file != null){
+            SaveFile(ticketString, file);
+        }
+		
+    }
+    //Allows user to save the file
+    private void SaveFile(String text, File file){
+        try {
+            FileWriter fileWriter = null;
+            fileWriter = new FileWriter(file);
+            fileWriter.write(text);
+            fileWriter.close();
+        } catch (IOException ex) {
+            Logger.getLogger(JavaFX_Text.class.getName()).log(Level.SEVERE, null, ex);
+        }
+         
+    }
+    //Generates tickets based on selection
+    private String makeTickets()
+    {
+    	
+    	String ticket = "GAME: " + selected + "\nTICKETS FOR " + nameField.getText() + "\nTO ENTER THE GAME, YOU MUST SHOW A VALID TICKET ID\n-----------------------------------------------\n";
+    	for(int i = 0; i < numStudentSeats; i++)
+    	{
+    		ticket += "ADMIT ONE\nTICKET ID: " + getSeatingID() + "\nSEATING SECTION: STUDENT\nPRICE: $5.00\nPAID WITH CARD ENDING IN " + getLastCardDigits() + "\n-----------------------------------------------\n";
+    	}
+    	for(int i = 0; i < numGeneralSeats; i++)
+    	{
+    		ticket += "ADMIT ONE\nTICKET ID: " + getSeatingID() + "\nSEATING SECTION: GENERAL\nPRICE: $30.00\nPAID WITH CARD ENDING IN " + getLastCardDigits() + "\n-----------------------------------------------\n";
+    	}
+    	for(int i = 0; i < numBoxSeats; i++)
+    	{
+    		ticket += "ADMIT ONE\nTICKET ID: " + getSeatingID() + "\nSEATING SECTION: BOX SEATS\nPRICE: $50.00\nPAID WITH CARD ENDING IN " + getLastCardDigits() + "\n-----------------------------------------------\n";
+    	}
+    	ticket += "TOTAL PRICE CHARGED: $" + price + "0\n-----------------------------------------------\nTHANK YOU\nENJOY THE GAME!";
+    	return ticket;
+    	
+    }
+    //Creates a random 9-digit seating ID
+    private String getSeatingID()
+    {
+    	int ID = 100000000 + new Random().nextInt(900000000);
+    	return Integer.toString(ID);
+    }
+    //Returns the last four digits of the card entered
+    private String getLastCardDigits()
+    {
+    	String card = cardField.getText();
+    	String lastFour = "";
+    	for(int i = card.length()-4; i < card.length(); i++)
+    	{
+    		lastFour += card.charAt(i);
+    	}
+    	return lastFour;
+    }
+    
+
+}
